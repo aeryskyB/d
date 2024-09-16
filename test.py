@@ -21,3 +21,16 @@ print(a[0, -1])
 
 a[0, 0] = 9
 print(a)
+
+d = Tensor(a)
+print(d)
+
+print(a == d.val.copy())
+print(1 == a)
+print(d.val.copy() == a)
+print(1 != a)
+
+print(1 < a)
+print(1 <= a)
+print(1 > a)
+print(1 >= a)
