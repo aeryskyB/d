@@ -3,31 +3,36 @@ import numpy as np
 from typing import List, Union
 
 class Tensor:
-
-    def __init__(self, v: Union[Tensor, np.ndarray, List], requires_grad: bool = False) -> None:
-        if isinstance(v, list):
-            val = np.array(v)
-        elif isinstance(v, Tensor):
+    def __init__(self, v, need: bool = False) -> None:
+        if isinstance(v, Tensor):
             val = v.val.copy()
-        elif isinstance(v, np.ndarray):
-            val = v
         else:
-            raise TypeError("Only Tensor, np.ndarray, list objects are allowed")
+            val = np.array(v)
+
         self.val = val
-        self.need = requires_grad
+        self.need = need
+
         if self.need:
             self.grad = None
             self.grad_stack = None
             self._grad_acc = Tensor(np.ones(self.val.shape))
 
     def __repr__(self) -> str:
-        r = 'Tensor'
+        r = '\nTensor'
+
         s = self.val.__str__().split('\n')
-        fin = r + '(' + ('\n' + ' '*(len(r) + 1)).join(s) + ')'
+
+        fin = r + '(' + ('\n' + ' '*(len(r))).join(s)
+        fin += f', need={self.need}' if self.need else ''
+        fin += ')'
+
         return fin
 
     def __str__(self) -> str:
-        return f'{self.val.__str__()}'
+        fin = f'\n{self.val.__str__()}'
+        fin += f', need={self.need}' if self.need else ''
+
+        return fin
 
     def __add__(self, other) -> Tensor:
         if isinstance(other, Tensor):
@@ -35,7 +40,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(self.val + opd, requires_grad = self.need)
+        out = Tensor(self.val + opd, need = self.need)
 
         if self.need:
             out.grad_stack = [np.add, self, other]
@@ -51,7 +56,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(self.val - opd, requires_grad = self.need)
+        out = Tensor(self.val - opd, need = self.need)
 
         if self.need:
             out.grad_stack = [np.subtract, self, other]
@@ -64,7 +69,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(opd - self.val, requires_grad = self.need)
+        out = Tensor(opd - self.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.subtract, other, self]
@@ -80,7 +85,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(self.val * opd, requires_grad = self.need)
+        out = Tensor(self.val * opd, need = self.need)
 
         if self.need:
             out.grad_stack = [np.multiply, self, other]
@@ -96,7 +101,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(self.val / opd, requires_grad = self.need)
+        out = Tensor(self.val / opd, need = self.need)
 
         if self.need:
             out.grad_stack = [np.divide, self, other]
@@ -109,7 +114,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(opd / self.val, requires_grad = self.need)
+        out = Tensor(opd / self.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.divide, other, self]
@@ -120,7 +125,7 @@ class Tensor:
         return self._rtruediv(other)
 
     def __neg__(self) -> Tensor:
-        out = Tensor(-self.val, requires_grad = self.need)
+        out = Tensor(-self.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.negative, self]
@@ -133,7 +138,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(self.val ** opd, requires_grad = self.need)
+        out = Tensor(self.val ** opd, need = self.need)
 
         if self.need:
             out.grad_stack = [np.power, self, other]
@@ -146,7 +151,7 @@ class Tensor:
         else:
             opd = other
 
-        out = Tensor(opd ** self.val, requires_grad = self.need)
+        out = Tensor(opd ** self.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.power, other, self]
@@ -161,6 +166,7 @@ class Tensor:
             out = Tensor(self.val == other.val)
         else:
             out = Tensor(self.val == other)
+
         return out
 
     def __ne__(self, other) -> Tensor:
@@ -168,6 +174,7 @@ class Tensor:
             out = Tensor(self.val != other.val)
         else:
             out = Tensor(self.val != other)
+
         return out
 
     def __lt__(self, other) -> Tensor:
@@ -175,6 +182,7 @@ class Tensor:
             out = Tensor(self.val < other.val)
         else:
             out = Tensor(self.val < other)
+
         return out
 
     def __le__(self, other) -> Tensor:
@@ -182,6 +190,7 @@ class Tensor:
             out = Tensor(self.val <= other.val)
         else:
             out = Tensor(self.val <= other)
+
         return out
 
     def __gt__(self, other) -> Tensor:
@@ -189,6 +198,7 @@ class Tensor:
             out = Tensor(self.val > other.val)
         else:
             out = Tensor(self.val > other)
+
         return out
 
     def __ge__(self, other) -> Tensor:
@@ -199,7 +209,7 @@ class Tensor:
         return out
 
     def __matmul__(self, other: Tensor) -> Tensor:
-        out = Tensor(self.val @ other.val, requires_grad = self.need)
+        out = Tensor(self.val @ other.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.matmul, self, other]
@@ -212,11 +222,11 @@ class Tensor:
     def __setitem__(self, idx, val):
         return self.val.__setitem__(idx, val)
 
-    def copy(self, requires_grad=True) -> Tensor:
-        return Tensor(self.val.copy(), requires_grad=requires_grad)
+    def copy(self, need=True) -> Tensor:
+        return Tensor(self.val.copy(), need=need)
 
     def exp(self, **kwargs) -> Tensor:
-        out = Tensor(np.exp(self.val, **kwargs), requires_grad=self.need)
+        out = Tensor(np.exp(self.val, **kwargs), need=self.need)
 
         if self.need:
             out.grad_stack = [np.exp, self]
@@ -224,19 +234,42 @@ class Tensor:
         return out
 
     def log(self, **kwargs) -> Tensor:
-        out = Tensor(np.log(self.val, **kwargs), requires_grad=self.need)
+        out = Tensor(np.log(self.val, **kwargs), need=self.need)
 
         if self.need:
-            out.grad.stack = [np.log, self]
+            out.grad_stack = [np.log, self]
 
         return out
 
     def sum(self, **kwargs) -> Tensor:
-        return Tensor(np.sum(self.val, **kwargs))
+        out_val = np.array(np.sum(self.val, **kwargs))
+        out = Tensor(out_val, need=self.need)
+
+        if self.need:
+            out.grad_stack = [np.sum, self]
+
+        return out
+
+    def transpose(self) -> Tensor:
+        out = Tensor(self.val.T, need=self.need)
+
+        if self.need:
+            out.grad_stack = [np.transpose, self]
+
+        return out
+
+    def reshape(self, shape=None) -> Tensor:
+        out = Tensor(self.val.reshape(shape), need=self.need)
+
+        if self.need:
+            out.grad_stack = [np.reshape, self, self.val.shape]
+
+        return out
 
     def back(self, f=None) -> None:
         if self.need:
             if f: self._grad_acc *= f
+
             if not self.grad_stack: return
             elif self.grad_stack[0] == np.add:
                 if isinstance(self.grad_stack[1], Tensor): (self.grad_stack[1]).back(f=self._grad_acc)
@@ -267,4 +300,24 @@ class Tensor:
                 (self.grad_stack[1]).back(f=self._grad_acc*self)
             elif self.grad_stack[0] == np.log:
                 (self.grad_stack[1]).back(f=self._grad_acc/self.grad_stack[1])
+            elif self.grad_stack[0] == np.transpose:
+                (self.grad_stack[1]).back(f=self._grad_acc.transpose())
+            elif self.grad_stack[0] == np.reshape:
+                (self.grad_stack[1]).back(f=self._grad_acc.reshape(self.grad_stack[2]))
+            elif self.grad_stack[0] == np.matmul:
+                (self.grad_stack[1]).back(f=self._grad_acc@self.grad_stack[2].transpose())
+                (self.grad_stack[2]).back(f=self.grad_stack[1].transpose()@self._grad_acc)
+            elif self.grad_stack[0] == np.sum:
+                (self.grad_stack[1]).back(f=self._grad_acc)
+
+    def reset_grad(self) -> None:
+        assert self.need, "Only applicable to Tensor with need=True"
+
+        self._grad_acc = self._grad_acc*0 + 1
+
+        if not self.grad_stack: return
+
+        for t in self.grad_stack:
+            if isinstance(t, Tensor) and t.need:
+                t.reset_grad()
 
