@@ -1,11 +1,3 @@
-# d
-This is my toy deep learning library 🤍  
-
-Have a nice day!
-
-# Usage
-`test_grad_d.py`:
-```python
 from base.tensor import Tensor, l
 
 x = Tensor([[1], [2]])
@@ -27,9 +19,3 @@ for i in range(10):
     loss.reset_grad()
 
 print(W)
-```
-
-# Inspirations
-1. tinygrad
-2. jax
-3. pytorch

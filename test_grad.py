@@ -2,11 +2,11 @@ from base.tensor import Tensor
 import numpy as np
 
 # scalar test (visual): https://cs231n.github.io/optimization-2/
-fwd = [Tensor([2.0], requires_grad=True), 
-       Tensor([-1.0], requires_grad=True),
-       Tensor([-3.0], requires_grad=True), 
-       Tensor([-2.0], requires_grad=True),
-       Tensor([-3.0], requires_grad=True)]
+fwd = [Tensor([2.0], need=True), 
+       Tensor([-1.0], need=True),
+       Tensor([-3.0], need=True), 
+       Tensor([-2.0], need=True),
+       Tensor([-3.0], need=True)]
 
 fwd.append(fwd[0] * fwd[1])
 fwd.append(fwd[2] * fwd[3])

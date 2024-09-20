@@ -2,6 +2,9 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Union
 
+## for keeping track
+# l = []
+
 class Tensor:
     def __init__(self, v, need: bool = False) -> None:
         if isinstance(v, Tensor):
@@ -16,6 +19,8 @@ class Tensor:
             self.grad_stack = None
             self._grad_acc = Tensor(np.ones(self.val.shape))
 
+        # l.append(self)
+
     def __repr__(self) -> str:
         r = '\nTensor'
 
@@ -28,21 +33,22 @@ class Tensor:
         return fin
 
     def __str__(self) -> str:
-        fin = f'\n{self.val.__str__()}'
+        fin = f'{self.val.__str__()}'
         fin += f', need={self.need}' if self.need else ''
-        fin += '\n'
 
         return fin
 
     def __add__(self, other) -> Tensor:
         if isinstance(other, Tensor):
+            o_need = other.need
             opd = other.val
+            out = Tensor(self.val + opd, need = self.need or other.need)
         else:
+            o_need = False
             opd = other
+            out = Tensor(self.val + opd, need = self.need)
 
-        out = Tensor(self.val + opd, need = self.need)
-
-        if self.need:
+        if self.need or o_need:
             out.grad_stack = [np.add, self, other]
 
         return out
@@ -52,24 +58,21 @@ class Tensor:
 
     def __sub__(self, other) -> Tensor:
         if isinstance(other, Tensor):
+            o_need = other.need
             opd = other.val
+            out = Tensor(self.val - opd, need = self.need or other.need)
         else:
+            o_need = False
             opd = other
+            out = Tensor(self.val - opd, need = self.need)
 
-        out = Tensor(self.val - opd, need = self.need)
-
-        if self.need:
+        if self.need or o_need:
             out.grad_stack = [np.subtract, self, other]
 
         return out
 
     def _rsub(self, other) -> Tensor:
-        if isinstance(other, Tensor):
-            opd = other.val
-        else:
-            opd = other
-
-        out = Tensor(opd - self.val, need = self.need)
+        out = Tensor(other - self.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.subtract, other, self]
@@ -81,13 +84,15 @@ class Tensor:
 
     def __mul__(self, other) -> Tensor:
         if isinstance(other, Tensor):
+            o_need = other.need
             opd = other.val
+            out = Tensor(self.val * opd, need = self.need or other.need)
         else:
+            o_need = False
             opd = other
+            out = Tensor(self.val * opd, need = self.need)
 
-        out = Tensor(self.val * opd, need = self.need)
-
-        if self.need:
+        if self.need or o_need:
             out.grad_stack = [np.multiply, self, other]
 
         return out
@@ -97,24 +102,21 @@ class Tensor:
 
     def __truediv__(self, other) -> Tensor:
         if isinstance(other, Tensor):
+            o_need = other.need
             opd = other.val
+            out = Tensor(self.val / opd, need = self.need or other.need)
         else:
+            o_need = False
             opd = other
+            out = Tensor(self.val / opd, need = self.need)
 
-        out = Tensor(self.val / opd, need = self.need)
-
-        if self.need:
+        if self.need or o_need:
             out.grad_stack = [np.divide, self, other]
 
         return out
 
     def _rtruediv(self, other) -> Tensor:
-        if isinstance(other, Tensor):
-            opd = other.val
-        else:
-            opd = other
-
-        out = Tensor(opd / self.val, need = self.need)
+        out = Tensor(other / self.val, need = self.need)
 
         if self.need:
             out.grad_stack = [np.divide, other, self]
@@ -134,13 +136,15 @@ class Tensor:
 
     def __pow__(self, other) -> Tensor:
         if isinstance(other, Tensor):
+            o_need = other.need
             opd = other.val
+            out = Tensor(self.val ** opd, need = self.need or other.need)
         else:
+            o_need = False
             opd = other
+            out = Tensor(self.val ** opd, need = self.need)
 
-        out = Tensor(self.val ** opd, need = self.need)
-
-        if self.need:
+        if self.need or o_need:
             out.grad_stack = [np.power, self, other]
 
         return out
@@ -148,10 +152,10 @@ class Tensor:
     def _rpow(self, other) -> Tensor:
         if isinstance(other, Tensor):
             opd = other.val
+            out = Tensor(self.val ** opd, need = self.need or other.need)
         else:
             opd = other
-
-        out = Tensor(opd ** self.val, need = self.need)
+            out = Tensor(opd ** self.val, need = self.need or other.need)
 
         if self.need:
             out.grad_stack = [np.power, other, self]
@@ -209,9 +213,10 @@ class Tensor:
         return out
 
     def __matmul__(self, other: Tensor) -> Tensor:
-        out = Tensor(self.val @ other.val, need = self.need)
+        assert isinstance(other, Tensor), "only tensor matmuls supported for now"
+        out = Tensor(self.val @ other.val, need = self.need or other.need)
 
-        if self.need:
+        if self.need or isinstance(other, Tensor):
             out.grad_stack = [np.matmul, self, other]
 
         return out
@@ -221,6 +226,9 @@ class Tensor:
 
     def __setitem__(self, idx, val):
         return self.val.__setitem__(idx, val)
+
+    def len(self):
+        return len(self.val)
 
     def copy(self, need=True) -> Tensor:
         return Tensor(self.val.copy(), need=need)
@@ -268,7 +276,10 @@ class Tensor:
 
     def back(self, f=None) -> None:
         if self.need:
-            if f: self._grad_acc *= f
+            if f: self._grad_acc = self._grad_acc * f
+            ## debugging
+            # print(f'g: {self._grad_acc}')
+            # print(f's: {self.grad_stack}')
 
             if not self.grad_stack: return
             elif self.grad_stack[0] == np.add:
@@ -311,7 +322,7 @@ class Tensor:
                 (self.grad_stack[1]).back(f=self._grad_acc)
 
     def reset_grad(self) -> None:
-        assert self.need, "Only applicable to Tensor with need=True"
+        if not self.need: return
 
         self._grad_acc = self._grad_acc*0 + 1
 
@@ -320,4 +331,20 @@ class Tensor:
         for t in self.grad_stack:
             if isinstance(t, Tensor) and t.need:
                 t.reset_grad()
+
+    def update_incr(self, delta) -> None:
+        if isinstance(delta, Tensor): delta = delta.val
+        self.val = self.val + delta
+
+    def update_decr(self, delta) -> None:
+        if isinstance(delta, Tensor): delta = delta.val
+        self.val = self.val - delta
+
+    def update_mult(self, delta) -> None:
+        if isinstance(delta, Tensor): delta = delta.val
+        self.val = self.val * delta
+
+    def update_div(self, delta) -> None:
+        if isinstance(delta, Tensor): delta = delta.val
+        self.val = self.val / delta
 
