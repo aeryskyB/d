@@ -4,7 +4,7 @@ This is my toy deep learning library 🤍
 Have a nice day!
 
 # Usage
-`test_grad_d.py`:
+[`test_grad_d.py`](./test_grad_d.py):
 ```python
 from base.tensor import Tensor, l
 
