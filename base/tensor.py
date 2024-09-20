@@ -13,7 +13,6 @@ class Tensor:
         self.need = need
 
         if self.need:
-            self.grad = None
             self.grad_stack = None
             self._grad_acc = Tensor(np.ones(self.val.shape))
 
@@ -24,13 +23,14 @@ class Tensor:
 
         fin = r + '(' + ('\n' + ' '*(len(r))).join(s)
         fin += f', need={self.need}' if self.need else ''
-        fin += ')'
+        fin += ')\n'
 
         return fin
 
     def __str__(self) -> str:
         fin = f'\n{self.val.__str__()}'
         fin += f', need={self.need}' if self.need else ''
+        fin += '\n'
 
         return fin
 
