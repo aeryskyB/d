@@ -1,4 +1,4 @@
-from base.tensor import Tensor, l
+from base.tensor import Tensor
 
 x = Tensor([[1], [2]])
 y = Tensor([[1], [0]])

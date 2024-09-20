@@ -6,7 +6,7 @@ Have a nice day!
 # Usage
 [`test_grad_d.py`](./test_grad_d.py):
 ```python
-from base.tensor import Tensor, l
+from base.tensor import Tensor
 
 x = Tensor([[1], [2]])
 y = Tensor([[1], [0]])
