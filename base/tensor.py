@@ -222,10 +222,13 @@ class Tensor:
         return out
 
     def __getitem__(self, idx):
-        return self.val.__getitem__(idx)
+        return Tensor(self.val.__getitem__(idx))
 
     def __setitem__(self, idx, val):
         return self.val.__setitem__(idx, val)
+
+    def numpy(self):
+        return self.val
 
     def len(self):
         return len(self.val)
