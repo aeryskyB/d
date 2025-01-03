@@ -1,6 +1,7 @@
 from .dist import Randn, Zeros
 from typing import Union
 from collections.abc import Iterable
+from .tensor import Tensor
 
 class Conv2d:
     def __init__(self, in_channels: int, out_channels, kernel_size: Iterable, stride: Union[int, Iterable] = 1, pad: [int, Iterable] = 0, pad_val = 0, need = False):
@@ -14,22 +15,32 @@ class Conv2d:
         self.pad_val = pad_val
 
     def __call__(self, x):
-        assert x.shape[1] + self.pad[0] >= self.kernel_size[0] and x.shape[2] + self.pad[1] >= self.kernel_size[1], f"Kernel size exceeds effective input size"
+        assert len(x.shape) >= 3, "Convolution permitted only for 3D+ tensors"
+        assert x.shape[-2] + self.pad[0] >= self.kernel_size[0] and x.shape[-1] + self.pad[1] >= self.kernel_size[1], f"Kernel size exceeds effective input size"
 
-        h = (x.shape[1] - self.kernel_size[0] + 2*self.pad[0]) // self.stride[0] + 1
-        w = (x.shape[2] - self.kernel_size[1] + 2*self.pad[1]) // self.stride[1] + 1
-        out = Zeros((self.out_channels, h, w))
-        x_ = Zeros((x.shape[0], x.shape[1]+2*self.pad[0], x.shape[2]+2*self.pad[1]))
+        h = (x.shape[-2] - self.kernel_size[0] + 2*self.pad[0]) // self.stride[0] + 1
+        w = (x.shape[-1] - self.kernel_size[1] + 2*self.pad[1]) // self.stride[1] + 1
+        out_shape = (*x.shape[:-3], self.out_channels, h, w) if len(x.shape) > 3 else (self.out_channels, h, w)
+
+        num_batch_flat = 1
+        for n in x.shape[:-3]: num_batch_flat *= n
+        out_shape_batch_flat = (num_batch_flat, *out_shape[-3:])
+
+        out = Zeros(out_shape_batch_flat)
+        x_ = Zeros((num_batch_flat, x.shape[-3], x.shape[-2]+2*self.pad[0], x.shape[-1]+2*self.pad[1]))
         x_ = x_ + self.pad_val
-        x_[:, self.pad[0]:self.pad[0]+x.shape[1], self.pad[1]:self.pad[1]+x.shape[2]] = x
+        x_[..., self.pad[0]:self.pad[0]+x.shape[-2], self.pad[1]:self.pad[1]+x.shape[-1]] = x
 
-        for c in range(self.out_channels):
-            for i in range(0, x.shape[1] - self.kernel_size[0] + 2*self.pad[0] + self.stride[0], self.stride[0]):
-                idx_i = i // self.stride[0]
-                for j in range(0, x.shape[2] - self.kernel_size[1] + 2*self.pad[1] + self.stride[1], self.stride[1]):
-                    idx_j = j // self.stride[1]
-                    out[c, idx_i, idx_j] = (self.weight[c,...] * x_[:,i:i+self.kernel_size[0],j:j+self.kernel_size[1]]).sum()
-            out[c,...] = out[c,...] + self.bias[c]
+        for b in range(out.shape[0]):
+            for c in range(self.out_channels):
+                for i in range(0, x.shape[-2] - self.kernel_size[0] + 2*self.pad[0] + self.stride[0], self.stride[0]):
+                    idx_i = i // self.stride[0]
+                    for j in range(0, x.shape[-1] - self.kernel_size[1] + 2*self.pad[1] + self.stride[1], self.stride[1]):
+                        idx_j = j // self.stride[1]
+                        out[b, c, idx_i, idx_j] = (self.weight[c,...] * x_[b, :, i:i+self.kernel_size[0], j:j+self.kernel_size[1]]).sum()
+                out[b, c,...] = out[b, c,...] + self.bias[c]
 
-        return out
+        return out.reshape(out_shape)
 
+def relu(x: Tensor):
+    return x * (x >= 0)
