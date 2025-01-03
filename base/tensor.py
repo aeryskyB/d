@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 from typing import List, Union
+import copy
 
 ## for keeping track
 # l = []
@@ -22,13 +23,13 @@ class Tensor:
         # l.append(self)
 
     def __repr__(self) -> str:
-        r = '\nTensor'
+        r = 'Tensor'
 
         s = self.val.__str__().split('\n')
 
-        fin = r + '(' + ('\n' + ' '*(len(r))).join(s)
+        fin = r + '(' + ('\n' + ' '*(len(r)+1)).join(s)
         fin += f', need={self.need}' if self.need else ''
-        fin += ')\n'
+        fin += ')'
 
         return fin
 
@@ -225,7 +226,8 @@ class Tensor:
         return Tensor(self.val.__getitem__(idx))
 
     def __setitem__(self, idx, val):
-        return self.val.__setitem__(idx, val)
+        
+        return self.val.__setitem__(idx, val.numpy()) if isinstance(val, Tensor) else self.val.__setitem__(idx, val)
 
     def numpy(self):
         return self.val
@@ -234,7 +236,7 @@ class Tensor:
         return len(self.val)
 
     def copy(self, need=True) -> Tensor:
-        return Tensor(self.val.copy(), need=need)
+        return Tensor(copy.deepcopy(self.val), need=need)
 
     def exp(self, **kwargs) -> Tensor:
         out = Tensor(np.exp(self.val, **kwargs), need=self.need)
