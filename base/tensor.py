@@ -2,6 +2,7 @@ from __future__ import annotations
 import numpy as np
 from typing import List, Union
 import copy
+from .ops import relu
 
 ## for keeping track
 # l = []
@@ -12,6 +13,8 @@ class Tensor:
             val = v.val.copy()
         else:
             val = np.array(v)
+
+        self.shape = val.shape
 
         self.val = val
         self.need = need
@@ -226,7 +229,6 @@ class Tensor:
         return Tensor(self.val.__getitem__(idx))
 
     def __setitem__(self, idx, val):
-        
         return self.val.__setitem__(idx, val.numpy()) if isinstance(val, Tensor) else self.val.__setitem__(idx, val)
 
     def numpy(self):
@@ -270,6 +272,10 @@ class Tensor:
             out.grad_stack = [np.transpose, self]
 
         return out
+
+    @property
+    def T(self):
+        return self.transpose()
 
     def reshape(self, shape=None) -> Tensor:
         out = Tensor(self.val.reshape(shape), need=self.need)
@@ -325,6 +331,8 @@ class Tensor:
                 (self.grad_stack[2]).back(f=self.grad_stack[1].transpose()@self._grad_acc)
             elif self.grad_stack[0] == np.sum:
                 (self.grad_stack[1]).back(f=self._grad_acc)
+            elif self.grad_stack[0] == relu:
+                (self.grad_stack[1]).back(f=(self.val>0)*self._grad_acc)
 
     def reset_grad(self) -> None:
         if not self.need: return

@@ -1,6 +1,6 @@
 import torch
 from base.tensor import Tensor
-from base.ops import Conv2d
+from base.compose import Conv2d
 from base.dist import Randn
 from time import perf_counter
 
